@@ -185,6 +185,60 @@
             margin-top: 5px;
         }
 
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .copy-btn:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+
+        .media-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            background: #f5f5f5;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .action-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
         .video-overlay {
             position: absolute;
             top: 50%;
@@ -297,13 +351,84 @@
 
         .lightbox-info {
             position: absolute;
-            bottom: 20px;
+            bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(255, 255, 255, 0.95);
             padding: 15px 30px;
             border-radius: 25px;
             text-align: center;
+        }
+
+        .lightbox-link {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 20px;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 80%;
+        }
+
+        .lightbox-link input {
+            border: none;
+            background: transparent;
+            font-size: 12px;
+            flex: 1;
+            min-width: 0;
+            padding: 5px;
+        }
+
+        .lightbox-link button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .lightbox-link button:hover {
+            background: #764ba2;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .toast.show {
+            display: flex;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
         .no-results {
@@ -356,6 +481,32 @@
             .lightbox-nav {
                 width: 40px;
                 height: 40px;
+            }
+
+            .lightbox-link {
+                max-width: 90%;
+                font-size: 10px;
+            }
+
+            .lightbox-link input {
+                font-size: 10px;
+            }
+
+            .lightbox-link button {
+                font-size: 10px;
+                padding: 6px 12px;
+            }
+
+            .copy-btn {
+                font-size: 10px;
+                padding: 6px 10px;
+            }
+
+            .toast {
+                right: 10px;
+                top: 10px;
+                font-size: 14px;
+                padding: 12px 20px;
             }
         }
 
@@ -428,6 +579,16 @@
         <button class="lightbox-nav next" id="lightboxNext">›</button>
         <div class="lightbox-content" id="lightboxContent"></div>
         <div class="lightbox-info" id="lightboxInfo"></div>
+        <div class="lightbox-link" id="lightboxLink">
+            <input type="text" id="githubLinkInput" readonly>
+            <button onclick="copyLightboxLink()">📋 Copy</button>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast">
+        <span>✓</span>
+        <span id="toastMessage">Link đã được sao chép!</span>
     </div>
 
     <script>
@@ -486,6 +647,8 @@
             // Videos
             { type: 'video', category: 'video', path: 'videos/video_2025-11-21_00-56-19.mp4', name: 'Video 2025-11-21' }
         ];
+
+        const GITHUB_BASE_URL = 'https://nguyendai05.github.io/access_file/';
 
         let currentCategory = 'all';
         let currentSearch = '';
@@ -567,10 +730,15 @@
                     'video': 'Video'
                 }[item.category];
 
+                const githubUrl = GITHUB_BASE_URL + item.path;
+
                 if (item.type === 'image') {
                     return `
-                        <div class="media-item" onclick="openLightbox(${index})">
-                            <img src="${item.path}" alt="${item.name}" loading="lazy">
+                        <div class="media-item">
+                            <button class="copy-btn" onclick="event.stopPropagation(); copyLink('${githubUrl}')">📋 Copy Link</button>
+                            <div onclick="openLightbox(${index})">
+                                <img src="${item.path}" alt="${item.name}" loading="lazy">
+                            </div>
                             <div class="media-info">
                                 <div class="media-title">${item.name}</div>
                                 <span class="media-category">${categoryLabel}</span>
@@ -579,9 +747,12 @@
                     `;
                 } else {
                     return `
-                        <div class="media-item" onclick="openLightbox(${index})">
-                            <video src="${item.path}" preload="metadata"></video>
-                            <div class="video-overlay"></div>
+                        <div class="media-item">
+                            <button class="copy-btn" onclick="event.stopPropagation(); copyLink('${githubUrl}')">📋 Copy Link</button>
+                            <div onclick="openLightbox(${index})">
+                                <video src="${item.path}" preload="metadata"></video>
+                                <div class="video-overlay"></div>
+                            </div>
                             <div class="media-info">
                                 <div class="media-title">${item.name}</div>
                                 <span class="media-category">${categoryLabel}</span>
@@ -607,12 +778,16 @@
             const lightbox = document.getElementById('lightbox');
             const content = document.getElementById('lightboxContent');
             const info = document.getElementById('lightboxInfo');
+            const linkInput = document.getElementById('githubLinkInput');
 
             if (item.type === 'image') {
                 content.innerHTML = `<img src="${item.path}" alt="${item.name}">`;
             } else {
                 content.innerHTML = `<video src="${item.path}" controls autoplay></video>`;
             }
+
+            const githubUrl = GITHUB_BASE_URL + item.path;
+            linkInput.value = githubUrl;
 
             info.innerHTML = `<strong>${item.name}</strong><br><small>${index + 1} / ${filteredData.length}</small>`;
             lightbox.classList.add('active');
@@ -641,6 +816,53 @@
             }
 
             openLightbox(currentLightboxIndex);
+        }
+
+        // Copy link functions
+        function copyLink(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('Link đã được sao chép!');
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('Link đã được sao chép!');
+                } catch (err) {
+                    showToast('Không thể sao chép link', 'error');
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+
+        function copyLightboxLink() {
+            const linkInput = document.getElementById('githubLinkInput');
+            linkInput.select();
+            copyLink(linkInput.value);
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+
+            toastMessage.textContent = message;
+
+            if (type === 'error') {
+                toast.style.background = '#ef4444';
+            } else {
+                toast.style.background = '#10b981';
+            }
+
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
         }
     </script>
 </body>
